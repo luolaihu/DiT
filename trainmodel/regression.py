@@ -6,9 +6,9 @@ import xgboost as xgb
 import os
 
 def train():
-    ## load data in do training
+    # # load data in do training
     # dtrain = xgb.DMatrix('/home/luolaihu/Downloads/train/cfeature')
-    # param = {'max_depth':5, 'eta':0.5, 'silent':1, 'objective':'reg:linear'}
+    # param = {'max_depth':6, 'eta':0.6, 'silent':1, 'objective':'reg:linear'}
     # num_round = 20
     # print ('running cross validation')
     # # do cross validation, this will print result out as
@@ -24,7 +24,9 @@ def train():
     dtrain = xgb.DMatrix('/home/luolaihu/Downloads/train/cfeature')
     deval = xgb.DMatrix('/home/luolaihu/Downloads/test/efeature')
     # specify parameters via map, definition are same as c++ version
-    param = {'max_depth':5, 'eta':0.2, 'silent':1, 'objective':'reg:linear', 'min_child_weight':1}
+    param = {'max_depth':4, 'eta':0.3, 'silent':1, 'objective':'reg:linear',
+             'min_child_weight':1, 'gamma': 0.1, 'nthread': 4}
+             # 'subsample':0.7, 'colsample_bytree':0.7}
     # specify validations set to watch performance
     watchlist = [(deval, 'eval'), (dtrain, 'train')]
     num_round = 30
@@ -45,8 +47,11 @@ def train():
     labels = deval.get_label()
     for i in range(1, len(predEvals)):
         print('%s:%s' % (labels[i], predEvals[i]))
+    print(float(sum(abs(predEvals[i] - labels[i])/labels[i] for i in range(1,len(predEvals)) if labels[i] > 0.0)/len(labels > 0.0)))
 
-    # bst = xgb.Booster({'nthread': 4}, model_file=modelPath)
+    xgb.plot_importance(bst)
+
+    # # bst = xgb.Booster({'nthread': 4}, model_file=modelPath)
     # dtest = xgb.DMatrix('/home/luolaihu/Downloads/test/tfeature')
     # indexMap = dict()
     # i = 0
