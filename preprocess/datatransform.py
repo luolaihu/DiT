@@ -30,6 +30,11 @@ def loadOrder(dirPath, baseDir):
     if os.path.exists(outPath):
         os.remove(outPath)
 
+    for i in range(1, 67):
+        cidPath = os.path.join(baseDir, str(i))
+        if os.path.exists(cidPath):
+            os.remove(cidPath)
+
     files = os.listdir(dirPath)
     for name in files:
         if name.startswith('.'):
@@ -37,7 +42,7 @@ def loadOrder(dirPath, baseDir):
         fullName = os.path.join(dirPath, name)
         reqMap = collections.defaultdict(float)
         ansMap = collections.defaultdict(float)
-        destMap = collections.defaultdict(float)
+        # destMap = collections.defaultdict(float)
         with open(fullName, 'r') as f:
             for line in f:
                 items = line.strip().split('\t')
@@ -55,16 +60,17 @@ def loadOrder(dirPath, baseDir):
                 if items[1] != 'NULL':
                     ansMap[key] = ansMap[key] + 1
 
-                destHash = items[4]
-                destId = CLUSTERMAP[destHash]
-                if destId < 1:
-                    pass
-                    # print('destHash error : %s , %s' % (destHash, line))
-                else:
-                    destKey = str(destId) + '#' + slice
-                    if items[1] != 'NULL':
-                        destMap[destKey] = destMap[destKey] + 1
-        print('destMap len: %s' % len(destMap))
+        ## 目的地
+        #         destHash = items[4]
+        #         destId = CLUSTERMAP[destHash]
+        #         if destId < 1:
+        #             pass
+        #             # print('destHash error : %s , %s' % (destHash, line))
+        #         else:
+        #             destKey = str(destId) + '#' + slice
+        #             if items[1] != 'NULL':
+        #                 destMap[destKey] = destMap[destKey] + 1
+        # print('destMap len: %s' % len(destMap))
         labelmap = collections.defaultdict(float)
         for k, v in reqMap.items():
             gap = v - ansMap[k]
@@ -73,17 +79,28 @@ def loadOrder(dirPath, baseDir):
         with open(outPath, 'a') as out:
             for key, label in labelmap.items():
                 sample = getFeature(key, FEATUREDICT)
-                destNum = '0'
-                if key in destMap:
-                    destNum = destMap[key]
-                label = str(label) + ',' + str(destNum)
+                # destNum = '0'
+                # if key in destMap:
+                #     destNum = destMap[key]
+                # label = str(label) + ',' + str(destNum)
+                label = str(label)
                 out.write(key + '\001' + label + '\001' + sample + '\r\n')
-                # feMap['label'] = label
-                # out.writelines(json.dumps(feMap))
+
+        ## 每个区域单独输出
+        # for key, label in labelmap.items():
+        #     sample = getFeature(key, FEATUREDICT)
+        #     destNum = '0'
+        #     if key in destMap:
+        #         destNum = destMap[key]
+        #     label = str(label) + ',' + str(destNum)
+        #     cid = key.split('#')[0]
+        #     cidPath = os.path.join(baseDir, 'cluster' , cid)
+        #     with open(cidPath, 'a') as out:
+        #         out.write(key + '\001' + label + '\001' + sample + '\r\n')
         print('feature extractor finish : %s' % name)
         reqMap.clear()
         ansMap.clear()
-        destMap.clear()
+        # destMap.clear()
     print('load order finish!')
 
 def loadPoi(dirPath):
@@ -193,8 +210,13 @@ def getFeature(key, featureDict):
     if dateslice in WEATHERMAP:
         wf = WEATHERMAP[dateslice]
         feMap.update(wf)
+
+    tid = dateslice.split('-')[3]
+    dayStr = dateslice[0:10]
+    dow = datetime.datetime.strptime(dayStr, '%Y-%m-%d').isoweekday()
     feMap['clid'] = clusterId
-    feMap['tid'] = dateslice.split('-')[3]
+    feMap['tid'] = tid
+    # feMap['dow'] = dow
 
     sample = ''
     for i in range(0, len(featureDict)):
@@ -216,6 +238,7 @@ def runTrainPipeline():
     # feature code
     FEATURESET.add('clid')
     FEATURESET.add('tid')
+    # FEATURESET.add('dow')
     flist = list(FEATURESET)
     i = 0
     for f in sorted(flist):
@@ -241,7 +264,10 @@ def runTestPipeline():
                 FEATUREDICT = json.loads(line)
     loadOrder(os.path.join(baseDir, 'order_data'), '/home/luolaihu/Downloads/test')
 
-if __name__ == '__main__':
-    # print(dateSlice('2016-01-28 08:54:46'))
+def run():
     runTrainPipeline()
     runTestPipeline()
+
+if __name__ == '__main__':
+    # print(dateSlice('2016-01-28 08:54:46'))
+    run()

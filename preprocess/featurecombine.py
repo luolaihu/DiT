@@ -6,18 +6,19 @@ import os
 import json
 
 COMBINEFE = 3
+FEATURELEN = 185
 
 def featureE(baseFe, cFe):
     CFEATUREMAP = dict()
     LFEATUREMAP = dict()
-    DFEATUREMAP = dict()
+    # DFEATUREMAP = dict()
     with open(baseFe, 'r') as f:
         for line in f:
             items = line.strip().split('\001')
             if len(items) == 3:
                 CFEATUREMAP[items[0]] = items[2]
-                LFEATUREMAP[items[0]] = items[1].split(',')[0]
-                DFEATUREMAP[items[0]] = items[1].split(',')[1]
+                LFEATUREMAP[items[0]] = items[1]
+                # DFEATUREMAP[items[0]] = items[1].split(',')[1]
             else:
                 print('format error : %' % line)
     print("load feature finish CFEATUREMAP : %d " % len(CFEATUREMAP))
@@ -25,10 +26,10 @@ def featureE(baseFe, cFe):
     if os.path.exists(cFe):
         os.remove(cFe)
     with open(cFe, 'a') as out:
-        for key, value in CFEATUREMAP.items():
+        for key in sorted(CFEATUREMAP.keys()):
             feStr = ''
             labelStr = ''
-            destStr = ''
+            # destStr = ''
             label = ''
             if key in LFEATUREMAP:
                 label = LFEATUREMAP[key]
@@ -58,53 +59,51 @@ def featureE(baseFe, cFe):
                         for fitem in fitems:
                             kvs = fitem.split(':')
                             fid = int(kvs[0])
-                            fid = fid + i * 185
+                            fid = fid + i * FEATURELEN
                             nkvs = str(fid) + ':' + kvs[1]
                             feStr = feStr + nkvs + '\t'
                     # print('key %s : lastStr %s' % (ikey, feStr))
 
                     if ikey in LFEATUREMAP:
-                        k = COMBINEFE * 185 + i
+                        k = COMBINEFE * FEATURELEN + i
                         fe = LFEATUREMAP[ikey]
                         if i == 0 :
                             fe = '0'
                         labelStr = labelStr + str(k) + ':' + fe + '\t'
 
-                    if ikey in DFEATUREMAP:
-                        k = COMBINEFE * 186 + i
-                        fe = DFEATUREMAP[ikey]
-                        if i == 0:
-                            fe = '0'
-                        destStr = destStr + str(k) + ':' + fe + '\t'
+                    # if ikey in DFEATUREMAP:
+                    #     k = COMBINEFE * ( FEATURELEN + 1) + i
+                    #     fe = DFEATUREMAP[ikey]
+                    #     if i == 0:
+                    #         fe = '0'
+                    #     destStr = destStr + str(k) + ':' + fe + '\t'
                     # print('key %s : lastStr %s' % (ikey , lastStr))
             if len(label.strip()) > 0 :
-                out.write(label + '\t' + feStr.strip() + '\t' + labelStr.strip() + '\t' + destStr.strip() + '\r\n')
+                out.write(label + '\t' + feStr.strip() + '\t' + labelStr.strip() + '\r\n')
     del CFEATUREMAP
     del LFEATUREMAP
-    del DFEATUREMAP
+    # del DFEATUREMAP
 
-def trainFe():
-    baseFe = '/home/luolaihu/Downloads/train/feature'
+def trainFe(baseFe):
     cFe = os.path.join('/home/luolaihu/Downloads/train', 'cfeature')
     featureE(baseFe, cFe)
 
-def evalFe():
-    baseFe = '/home/luolaihu/Downloads/test/feature'
+def evalFe(baseFe):
     cFe = os.path.join('/home/luolaihu/Downloads/test', 'efeature')
     featureE(baseFe, cFe)
 
-def testFe():
+def testFe(baseFe, index):
     CFEATUREMAP = dict()
     LFEATUREMAP = dict()
-    DFEATUREMAP = dict()
-    fileName = '/home/luolaihu/Downloads/test/feature'
-    with open(fileName, 'r') as f:
+    # DFEATUREMAP = dict()
+    baseFe = '/home/luolaihu/Downloads/test/feature'
+    with open(baseFe, 'r') as f:
         for line in f:
             items = line.strip().split('\001')
             if len(items) == 3:
                 CFEATUREMAP[items[0]] = items[2]
-                LFEATUREMAP[items[0]] = items[1].split(',')[0]
-                DFEATUREMAP[items[0]] = items[1].split(',')[1]
+                LFEATUREMAP[items[0]] = items[1]
+                # DFEATUREMAP[items[0]] = items[1].split(',')[1]
             else:
                 print('format error : %' % line)
     print("load feature finish CFEATUREMAP : %d " % len(CFEATUREMAP))
@@ -129,9 +128,15 @@ def testFe():
                 predictTime.add(line)
 
     keyList = list()
-    for i in range(1,67):
-        for key in predictTime:
-            keyList.append(str(i) + '#' + key)
+    # predict index
+    if index == 0:
+        for i in range(1,67):
+            for key in sorted(predictTime):
+                keyList.append(str(i) + '#' + key)
+    else:
+        for i in range(index,index+1):
+            for key in sorted(predictTime):
+                keyList.append(str(i) + '#' + key)
 
     outPath = os.path.join('/home/luolaihu/Downloads/test', 'tfeature')
     if os.path.exists(outPath):
@@ -142,10 +147,10 @@ def testFe():
         os.remove(labelPath)
 
     with open(outPath, 'a') as out:
-        for key in sorted(keyList):
+        for key in keyList: # sorted(keyList)
             feStr = ''
             labelStr = ''
-            destStr = ''
+            # destStr = ''
             label = ''
             if key in LFEATUREMAP:
                 label = LFEATUREMAP[key]
@@ -187,17 +192,38 @@ def testFe():
                             fe = '0'
                         labelStr = labelStr + str(k) + ':' + fe + '\t'
 
-                    if ikey in DFEATUREMAP:
-                        k = COMBINEFE * 186 + i
-                        fe = DFEATUREMAP[ikey]
-                        if i == 0:
-                            fe = '0'
-                        destStr = destStr + str(k) + ':' + fe + '\t'
-            out.write(label + '\t' + feStr.strip() + '\t' + labelStr.strip() + '\t' + destStr.strip() + '\r\n')
+                    # if ikey in DFEATUREMAP:
+                    #     k = COMBINEFE * 186 + i
+                    #     fe = DFEATUREMAP[ikey]
+                    #     if i == 0:
+                    #         fe = '0'
+                    #     destStr = destStr + str(k) + ':' + fe + '\t'
+            out.write(label + '\t' + feStr.strip() + '\t' + labelStr.strip() + '\r\n')
             with open(labelPath, 'a') as labelOut:
                 labelOut.write(key + '#' + label + '\r\n')
 
+def run():
+    baseFe = '/home/luolaihu/Downloads/train/feature'
+    trainFe(baseFe)
+    baseFe = '/home/luolaihu/Downloads/test/feature'
+    evalFe(baseFe)
+    baseFe = '/home/luolaihu/Downloads/test/feature'
+    testFe(baseFe, 0)
+
 if __name__ == '__main__':
-    trainFe()
-    evalFe()
-    testFe()
+    # baseFe = '/home/luolaihu/Downloads/train/feature'
+    # trainFe(baseFe)
+    # baseFe = '/home/luolaihu/Downloads/test/feature'
+    # evalFe(baseFe)
+    # baseFe = '/home/luolaihu/Downloads/test/feature'
+    # testFe(baseFe, 0)
+    run()
+    # from trainmodel import regression
+    # for i in range(1, 67):
+    #     baseFe = '/home/luolaihu/Downloads/train/cluster/' + str(i)
+    #     trainFe(baseFe)
+    #     baseFe = '/home/luolaihu/Downloads/test/cluster/' + str(i)
+    #     evalFe(baseFe)
+    #     baseFe = '/home/luolaihu/Downloads/test/cluster/' + str(i)
+    #     testFe(baseFe, i)
+    #     regression.train()
